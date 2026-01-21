@@ -13,10 +13,9 @@ const ParticleField: React.FC = () => {
     let height = canvas.height = window.innerHeight;
 
     const particles: Particle[] = [];
-    // Significantly increased density
     const particleCount = Math.floor((width * height) / 9000); 
     const connectionDistance = 140;
-    const mouseDistance = 300; // Larger interaction radius
+    const mouseDistance = 300;
 
     let mouse = { x: -1000, y: -1000 };
 
@@ -30,22 +29,20 @@ const ParticleField: React.FC = () => {
       constructor() {
         this.x = Math.random() * width;
         this.y = Math.random() * height;
-        this.vx = (Math.random() - 0.5) * 0.5; // Slightly faster default movement
+        this.vx = (Math.random() - 0.5) * 0.5; 
         this.vy = (Math.random() - 0.5) * 0.5;
-        this.size = Math.random() * 2.0 + 0.5; // Larger particles
+        this.size = Math.random() * 2.0 + 0.5; 
       }
 
       update() {
         this.x += this.vx;
         this.y += this.vy;
 
-        // Wrap around screen
         if (this.x < 0) this.x = width;
         if (this.x > width) this.x = 0;
         if (this.y < 0) this.y = height;
         if (this.y > height) this.y = 0;
 
-        // Mouse interaction
         const dx = mouse.x - this.x;
         const dy = mouse.y - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -55,26 +52,23 @@ const ParticleField: React.FC = () => {
             const forceDirectionY = dy / distance;
             const force = (mouseDistance - distance) / mouseDistance;
             
-            // Stronger push effect
             const directionX = forceDirectionX * force * 3; 
             const directionY = forceDirectionY * force * 3;
             
-            this.vx -= directionX * 0.05; // Add momentum
+            this.vx -= directionX * 0.05;
             this.vy -= directionY * 0.05;
         }
         
-        // Friction to return to normal speed
         this.vx *= 0.99;
         this.vy *= 0.99;
         
-        // Minimum speed check to keep them moving
         if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.05;
         if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.05;
       }
 
       draw() {
         if (!ctx) return;
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.3})`; // Brighter
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.3})`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
@@ -96,7 +90,6 @@ const ParticleField: React.FC = () => {
         p.draw();
       });
 
-      // Draw connections
       ctx.lineWidth = 0.5;
 
       for (let i = 0; i < particles.length; i++) {
@@ -107,7 +100,7 @@ const ParticleField: React.FC = () => {
 
           if (distance < connectionDistance) {
             const opacity = 1 - (distance / connectionDistance);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.2})`; // More visible lines
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.2})`;
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -142,7 +135,9 @@ const ParticleField: React.FC = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 mix-blend-screen opacity-80" />;
+  // Updated z-index to 30 to ensure it overlays background images (like in Hero) while staying below interactive elements if needed.
+  // pointer-events-none ensures it doesn't block clicks.
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-[30] mix-blend-screen opacity-80" />;
 };
 
 export default ParticleField;

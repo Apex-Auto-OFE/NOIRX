@@ -1,7 +1,20 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message } from "../types";
 
-const API_KEY = process.env.API_KEY || '';
+// Safe access to environment variables that works in both Node and Browser (Vite/Webpack) environments
+const getApiKey = () => {
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  // @ts-ignore - Check for Vite's import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.API_KEY) {
+    // @ts-ignore
+    return import.meta.env.API_KEY;
+  }
+  return '';
+};
+
+const API_KEY = getApiKey();
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -18,14 +31,11 @@ If asked about the firm, describe NOIR as "The silence between the notes. The in
 
 export const sendMessageToGemini = async (history: Message[], newMessage: string): Promise<string> => {
   if (!API_KEY) {
-    return "Private Key Verification Failed. Access Denied.";
+    return "Private Key Verification Failed. Access Denied. (Missing API_KEY)";
   }
 
   try {
-    // Construct chat history for context (simplified for this specific stateless call pattern, 
-    // or use ai.chats.create for stateful conversation if preferred, but here we do single turn for simplicity or stateless feeling)
-    
-    // For a persistent chat feel, we should use the chat API.
+    // Construct chat history for context
     const chat = ai.chats.create({
       model: 'gemini-3-flash-preview',
       config: {
