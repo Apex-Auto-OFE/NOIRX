@@ -95,7 +95,7 @@ const Concierge: React.FC = () => {
         </Reveal>
 
         <Reveal delay={0.2}>
-          <div className="border border-white/10 bg-black/80 shadow-2xl shadow-black backdrop-blur-md relative overflow-hidden">
+          <div className="border border-white/10 bg-black/40 shadow-2xl shadow-black backdrop-blur-sm relative overflow-hidden">
              {/* Decorative Corners */}
              <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white"></div>
              <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white"></div>
@@ -114,7 +114,7 @@ const Concierge: React.FC = () => {
             {/* Chat Area */}
             <div 
               ref={scrollRef}
-              className="h-[500px] overflow-y-auto p-8 space-y-12 scroll-smooth bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] bg-fixed"
+              className="h-[500px] overflow-y-auto p-8 space-y-12 scroll-smooth bg-transparent"
             >
               {messages.map((msg) => (
                 <div 
@@ -125,7 +125,7 @@ const Concierge: React.FC = () => {
                     className={`max-w-[80%] p-6 text-sm font-light leading-relaxed border backdrop-blur-md relative ${
                       msg.role === 'user' 
                         ? 'bg-white/5 text-white border-white/20 rounded-bl-xl' 
-                        : 'bg-black/50 text-neutral-300 border-l-2 border-white/30 pl-6 border-y-0 border-r-0'
+                        : 'bg-black/20 text-neutral-300 border-l-2 border-white/30 pl-6 border-y-0 border-r-0'
                     }`}
                   >
                     <TypewriterMessage text={msg.text} role={msg.role} />
@@ -146,7 +146,7 @@ const Concierge: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-0 border-t border-white/10 bg-black flex relative">
+            <div className="p-0 border-t border-white/10 bg-black/60 flex relative">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-white/30 font-mono text-xs">{'>'}</span>
               <input
                 type="text"

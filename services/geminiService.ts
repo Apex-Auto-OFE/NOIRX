@@ -3,21 +3,20 @@ import { Message } from "../types";
 
 // Safe access to environment variables that works in both Node and Browser (Vite/Webpack) environments
 const getApiKey = () => {
-  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-    return process.env.API_KEY;
-  }
-  // @ts-ignore - Check for Vite's import.meta.env
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.API_KEY) {
-    // @ts-ignore
-    return import.meta.env.API_KEY;
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+    // @ts-ignore - Check for Vite's import.meta.env
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.API_KEY) {
+      // @ts-ignore
+      return import.meta.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors during env access
   }
   return '';
 };
-
-const API_KEY = getApiKey();
-
-// Initialize the client
-const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const SYSTEM_INSTRUCTION = `
 You are 'Vanguard', the digital concierge for NOIR, an elite strategic consultancy firm.
@@ -30,11 +29,17 @@ If asked about the firm, describe NOIR as "The silence between the notes. The in
 `;
 
 export const sendMessageToGemini = async (history: Message[], newMessage: string): Promise<string> => {
-  if (!API_KEY) {
-    return "Private Key Verification Failed. Access Denied. (Missing API_KEY)";
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
+    console.warn("API Key missing. Chat functionality disabled.");
+    return "Secure Channel: Offline. [Missing API Credentials]";
   }
 
   try {
+    // Initialize client lazily to prevent runtime crashes on module load
+    const ai = new GoogleGenAI({ apiKey });
+
     // Construct chat history for context
     const chat = ai.chats.create({
       model: 'gemini-3-flash-preview',

@@ -1,19 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Reveal from './Reveal';
 
-// Base coordinates
-const initialNodes = [
-  { id: 1, x: 20, y: 30, name: "NY_HQ" },
-  { id: 2, x: 25, y: 35, name: "DC_OP" },
-  { id: 3, x: 48, y: 25, name: "LON_EX" },
-  { id: 4, x: 52, y: 28, name: "ZRH_VLT" },
-  { id: 5, x: 55, y: 40, name: "DBX_HUB" },
-  { id: 6, x: 80, y: 35, name: "TKY_NOD" },
-  { id: 7, x: 82, y: 45, name: "SIN_GW" },
-  { id: 8, x: 85, y: 70, name: "SYD_LNK" },
-  { id: 9, x: 30, y: 60, name: "SAO_RES" },
-];
-
 const logEvents = [
     "UPLINK ESTABLISHED: NY_HQ",
     "PACKET INTERCEPTED [LAT: 45.2, LON: 12.1]",
@@ -27,35 +14,11 @@ const logEvents = [
 ];
 
 const Network: React.FC = () => {
-  const [activeNode, setActiveNode] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  // Use state for animated positions
-  const [currentNodes, setCurrentNodes] = useState(initialNodes.map(n => ({ ...n, ox: 0, oy: 0 })));
-  
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
-    // Animation loop for drifting nodes
-    let frameId: number;
-    let time = 0;
-
-    const animate = () => {
-        time += 0.005;
-        setCurrentNodes(prevNodes => prevNodes.map((node, i) => ({
-            ...node,
-            // Create organic drift using sine waves with different phases
-            ox: Math.sin(time + i * 1.5) * 2, 
-            oy: Math.cos(time + i * 2.1) * 2 
-        })));
-        frameId = requestAnimationFrame(animate);
-    };
-    
-    frameId = requestAnimationFrame(animate);
-
-    // Node pulse interval
-    const pulseInterval = setInterval(() => {
-      setActiveNode(Math.floor(Math.random() * initialNodes.length));
-    }, 2000);
-
-    // Logger interval
+    // Logger interval - separate from animation loop
     const logInterval = setInterval(() => {
         setLogs(prev => {
             const newLog = logEvents[Math.floor(Math.random() * logEvents.length)];
@@ -65,10 +28,103 @@ const Network: React.FC = () => {
         });
     }, 1500);
 
+    return () => clearInterval(logInterval);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.width = canvas.offsetWidth;
+    let height = canvas.height = canvas.offsetHeight;
+
+    // Define Nodes
+    const nodes = [
+      { id: 1, x: width * 0.20, y: height * 0.30, baseX: width * 0.20, baseY: height * 0.30, name: "NY_HQ", phase: 0 },
+      { id: 2, x: width * 0.25, y: height * 0.35, baseX: width * 0.25, baseY: height * 0.35, name: "DC_OP", phase: 1 },
+      { id: 3, x: width * 0.48, y: height * 0.25, baseX: width * 0.48, baseY: height * 0.25, name: "LON_EX", phase: 2 },
+      { id: 4, x: width * 0.52, y: height * 0.28, baseX: width * 0.52, baseY: height * 0.28, name: "ZRH_VLT", phase: 3 },
+      { id: 5, x: width * 0.55, y: height * 0.40, baseX: width * 0.55, baseY: height * 0.40, name: "DBX_HUB", phase: 4 },
+      { id: 6, x: width * 0.80, y: height * 0.35, baseX: width * 0.80, baseY: height * 0.35, name: "TKY_NOD", phase: 5 },
+      { id: 7, x: width * 0.82, y: height * 0.45, baseX: width * 0.82, baseY: height * 0.45, name: "SIN_GW", phase: 6 },
+      { id: 8, x: width * 0.85, y: height * 0.70, baseX: width * 0.85, baseY: height * 0.70, name: "SYD_LNK", phase: 0.5 },
+      { id: 9, x: width * 0.30, y: height * 0.60, baseX: width * 0.30, baseY: height * 0.60, name: "SAO_RES", phase: 1.5 },
+    ];
+
+    let time = 0;
+    let animationFrameId: number;
+
+    const animate = () => {
+        time += 0.02;
+        ctx.clearRect(0, 0, width, height);
+        
+        // Update positions
+        nodes.forEach(node => {
+            node.x = node.baseX + Math.sin(time + node.phase) * 15;
+            node.y = node.baseY + Math.cos(time * 0.8 + node.phase) * 15;
+        });
+
+        // Draw connections
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const dx = nodes[i].x - nodes[j].x;
+                const dy = nodes[i].y - nodes[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // Connect if close enough
+                if (dist < width * 0.25) {
+                    const opacity = 1 - (dist / (width * 0.25));
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.3})`;
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[i].x, nodes[i].y);
+                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Draw Nodes
+        nodes.forEach((node, i) => {
+             // Glow
+             const pulse = (Math.sin(time * 2 + i) + 1) / 2; // 0 to 1
+             ctx.fillStyle = `rgba(255, 255, 255, ${0.1 + pulse * 0.2})`;
+             ctx.beginPath();
+             ctx.arc(node.x, node.y, 10 + pulse * 5, 0, Math.PI * 2);
+             ctx.fill();
+
+             // Core
+             ctx.fillStyle = '#FFFFFF';
+             ctx.beginPath();
+             ctx.arc(node.x, node.y, 3, 0, Math.PI * 2);
+             ctx.fill();
+
+             // Label
+             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+             ctx.font = '9px monospace';
+             ctx.fillText(node.name, node.x + 10, node.y - 10);
+        });
+
+        animationFrameId = requestAnimationFrame(animate);
+    };
+
+    const handleResize = () => {
+        width = canvas.width = canvas.offsetWidth;
+        height = canvas.height = canvas.offsetHeight;
+        // Recalculate base positions roughly based on ratio
+        nodes.forEach((node, i) => {
+             // Reset to initial relative positions if needed, or just let them drift
+        });
+    };
+
+    window.addEventListener('resize', handleResize);
+    animate();
+
     return () => {
-        cancelAnimationFrame(frameId);
-        clearInterval(pulseInterval);
-        clearInterval(logInterval);
+        window.removeEventListener('resize', handleResize);
+        cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
@@ -100,63 +156,8 @@ const Network: React.FC = () => {
             {/* Grid Background */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
             
-            {/* Dynamic Map Container */}
-            <div className="absolute inset-0 w-full h-full">
-                
-                {/* SVG Layer for Connections */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                    {currentNodes.map((startNode, i) => 
-                        currentNodes.map((endNode, j) => {
-                            if (i >= j) return null; // Avoid duplicates
-                            // Calculate distance approx (using % coordinates)
-                            const dist = Math.sqrt(Math.pow(startNode.x - endNode.x, 2) + Math.pow(startNode.y - endNode.y, 2));
-                            if (dist > 30) return null; // Only connect neighbors
-
-                            return (
-                                <line 
-                                    key={`${i}-${j}`}
-                                    x1={`${startNode.x + startNode.ox}%`} 
-                                    y1={`${startNode.y + startNode.oy}%`}
-                                    x2={`${endNode.x + endNode.ox}%`}
-                                    y2={`${endNode.y + endNode.oy}%`}
-                                    stroke="white"
-                                    strokeWidth="0.5"
-                                    strokeOpacity={1 - (dist / 30)}
-                                />
-                            );
-                        })
-                    )}
-                </svg>
-
-                {/* Nodes */}
-                {currentNodes.map((node, i) => (
-                    <div 
-                        key={i}
-                        className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-75 ease-linear will-change-transform"
-                        style={{ 
-                            left: `${node.x + node.ox}%`, 
-                            top: `${node.y + node.oy}%` 
-                        }}
-                    >
-                        <div className="relative group cursor-hover">
-                            {/* Pulse Ring */}
-                            <div className={`absolute -inset-4 border border-white/20 rounded-full transition-all duration-1000 ${activeNode === i ? 'scale-150 opacity-0' : 'scale-0 opacity-100'}`}></div>
-                            
-                            {/* Center Dot */}
-                            <div className="w-2 h-2 bg-white rounded-full relative z-10 shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-                            
-                            {/* Rotating Ring Decor */}
-                            <div className="absolute -inset-2 border-t border-r border-white/30 rounded-full w-6 h-6 animate-spin duration-[3s] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                            {/* Label */}
-                            <div className="absolute top-4 left-4 bg-black border border-white/20 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-20">
-                                <span className="text-[9px] font-mono text-white tracking-widest">{node.name}</span>
-                                <div className="text-[7px] text-emerald-500 font-mono mt-1">LAT: {node.x.toFixed(2)} / LON: {node.y.toFixed(2)}</div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {/* Canvas Container */}
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
             {/* Radar Sweep Effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[20%] -skew-x-12 animate-[pulse_4s_linear_infinite] translate-x-[-100%] group-hover:animate-none pointer-events-none"></div>

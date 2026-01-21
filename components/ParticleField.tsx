@@ -135,9 +135,9 @@ const ParticleField: React.FC = () => {
     };
   }, []);
 
-  // Updated z-index to 30 to ensure it overlays background images (like in Hero) while staying below interactive elements if needed.
-  // pointer-events-none ensures it doesn't block clicks.
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-[30] mix-blend-screen opacity-80" />;
+  // Set z-index to 0 to be behind content but visible. 
+  // Ensure App.tsx has relative positioning on main content.
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 mix-blend-screen opacity-80" />;
 };
 
 export default ParticleField;
